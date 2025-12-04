@@ -1,0 +1,888 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Online Raffle Draw System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #667eea;
+            --primary-dark: #5a67d8;
+            --secondary: #48bb78;
+            --danger: #f56565;
+            --dark: #2d3748;
+            --light: #f7fafc;
+            --gray: #718096;
+            --border: #e2e8f0;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 20px 40px rgba(0, 0, 0, 0.15);
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            color: var(--dark);
+        }
+
+        header {
+            background: rgba(255, 255, 255, 0.98);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.5rem;
+        }
+
+        .stats {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .stat-label {
+            font-size: 0.875rem;
+            color: var(--gray);
+        }
+
+        main {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1400px;
+            width: 100%;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 2rem;
+        }
+
+        .draw-section {
+            background: white;
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .draw-section::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(102, 126, 234, 0.1) 0%, transparent 70%);
+            animation: rotate 20s linear infinite;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .draw-container {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            width: 100%;
+        }
+
+        .draw-title {
+            font-size: 2rem;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .draw-subtitle {
+            color: var(--gray);
+            margin-bottom: 3rem;
+        }
+
+        .number-display {
+            width: 300px;
+            height: 300px;
+            margin: 0 auto 3rem;
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: inset 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .number-display.spinning {
+            animation: pulse 0.5s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        .winner-number {
+            font-size: 5rem;
+            font-weight: bold;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            transition: all 0.3s ease;
+        }
+
+        .winner-number.celebrating {
+            animation: bounce 0.5s ease;
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .countdown {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 50px;
+            height: 50px;
+            background: var(--danger);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+            animation: countdown-pulse 1s ease-in-out infinite;
+            box-shadow: 0 4px 15px rgba(245, 101, 101, 0.4);
+        }
+
+        @keyframes countdown-pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        .draw-button {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            padding: 1rem 3rem;
+            font-size: 1.25rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .draw-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 40px rgba(102, 126, 234, 0.4);
+        }
+
+        .draw-button:active {
+            transform: translateY(0);
+        }
+
+        .draw-button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .draw-button::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+
+        .draw-button:active::after {
+            width: 300px;
+            height: 300px;
+        }
+
+        .participants-info {
+            margin-top: 2rem;
+            padding: 1rem;
+            background: var(--light);
+            border-radius: 10px;
+            width: 100%;
+        }
+
+        .participants-input {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .participants-input input {
+            flex: 1;
+            padding: 0.75rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .participants-input input:focus {
+            outline: none;
+            border-color: var(--primary);
+        }
+
+        .add-btn {
+            background: var(--secondary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.3s ease;
+        }
+
+        .add-btn:hover {
+            background: #38a169;
+            transform: translateY(-1px);
+        }
+
+        .participants-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+            max-height: 100px;
+            overflow-y: auto;
+        }
+
+        .participant-tag {
+            background: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            border: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .remove-participant {
+            cursor: pointer;
+            color: var(--danger);
+            font-weight: bold;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .winners-section {
+            background: white;
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: var(--shadow);
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .section-title {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--dark);
+        }
+
+        .clear-btn {
+            background: var(--danger);
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.3s ease;
+        }
+
+        .clear-btn:hover {
+            background: #e53e3e;
+            transform: translateY(-1px);
+        }
+
+        .winners-list {
+            flex: 1;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 0.75rem;
+        }
+
+        .winner-item {
+            background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+            padding: 1rem;
+            border-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            animation: slideIn 0.3s ease;
+            transition: all 0.3s ease;
+        }
+
+        .winner-item:hover {
+            transform: translateX(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .winner-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .winner-rank {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .winner-details {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .winner-number-text {
+            font-size: 1.25rem;
+            font-weight: bold;
+            color: var(--dark);
+        }
+
+        .winner-time {
+            font-size: 0.75rem;
+            color: var(--gray);
+        }
+
+        .winner-badge {
+            background: var(--secondary);
+            color: white;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1rem;
+            color: var(--gray);
+        }
+
+        .empty-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            opacity: 0.5;
+        }
+
+        .confetti {
+            position: fixed;
+            width: 10px;
+            height: 10px;
+            background: var(--primary);
+            position: absolute;
+            animation: confetti-fall 3s ease-out forwards;
+        }
+
+        @keyframes confetti-fall {
+            0% {
+                transform: translateY(-100vh) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(720deg);
+                opacity: 0;
+            }
+        }
+
+        .toast {
+            position: fixed;
+            bottom: 2rem;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--dark);
+            color: white;
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            box-shadow: var(--shadow-lg);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        @media (max-width: 1024px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+
+            .sidebar {
+                order: -1;
+            }
+
+            .winners-section {
+                max-height: 400px;
+            }
+        }
+
+        @media (max-width: 640px) {
+            header {
+                padding: 1rem;
+            }
+
+            .stats {
+                display: none;
+            }
+
+            .draw-section {
+                padding: 2rem 1rem;
+            }
+
+            .number-display {
+                width: 250px;
+                height: 250px;
+            }
+
+            .winner-number {
+                font-size: 4rem;
+            }
+        }
+    </style>
+</head>
+<body>
+<header>
+    <div class="header-content">
+        <div class="logo">
+            <div class="logo-icon">🎯</div>
+            <span>RaffleDraw Pro</span>
+        </div>
+        <div class="stats">
+            <div class="stat-item">
+                <div class="stat-value" id="totalDraws">0</div>
+                <div class="stat-label">Total Draws</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="participantCount">0</div>
+                <div class="stat-label">Participants</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value" id="uniqueWinners">0</div>
+                <div class="stat-label">Unique Winners</div>
+            </div>
+        </div>
+    </div>
+</header>
+
+<main>
+    <section class="draw-section">
+        <div class="draw-container">
+            <h1 class="draw-title">🎉 Lucky Draw</h1>
+            <p class="draw-subtitle">Click the button to draw a winner!</p>
+
+            <div class="number-display" id="numberDisplay">
+                <div class="winner-number" id="winnerNumber">?</div>
+                <div class="countdown" id="countdown" style="display: none;">5</div>
+            </div>
+
+            <button class="draw-button" id="drawButton" onclick="startDraw()">
+                Draw Winner
+            </button>
+
+            <div class="participants-info">
+                <div class="participants-input">
+                    <input type="text" id="participantInput" placeholder="Enter participant number or name" onkeypress="handleKeyPress(event)">
+                    <button class="add-btn" onclick="addParticipant()">Add</button>
+                </div>
+                <div class="participants-list" id="participantsList"></div>
+            </div>
+        </div>
+    </section>
+
+    <aside class="sidebar">
+        <section class="winners-section">
+            <div class="section-header">
+                <h2 class="section-title">🏆 Winners List</h2>
+                <button class="clear-btn" onclick="clearWinners()">Clear All</button>
+            </div>
+            <div class="winners-list" id="winnersList">
+                <div class="empty-state">
+                    <div class="empty-icon">📋</div>
+                    <p>No winners yet</p>
+                    <p style="font-size: 0.875rem; margin-top: 0.5rem;">Start drawing to see winners here</p>
+                </div>
+            </div>
+        </section>
+    </aside>
+</main>
+
+<div class="toast" id="toast"></div>
+
+<script>
+    let participants = [];
+    let winners = [];
+    let isDrawing = false;
+    let totalDraws = 0;
+
+    // Initialize with some default participants
+    function initializeParticipants() {
+        const defaultParticipants = ['001', '002', '003', '004', '005', '006', '007', '008', '009', '010'];
+        defaultParticipants.forEach(p => participants.push(p));
+        updateParticipantsList();
+        updateStats();
+    }
+
+    function addParticipant() {
+        const input = document.getElementById('participantInput');
+        const value = input.value.trim();
+
+        if (value && !participants.includes(value)) {
+            participants.push(value);
+            updateParticipantsList();
+            updateStats();
+            input.value = '';
+            showToast(`Added: ${value}`);
+        } else if (participants.includes(value)) {
+            showToast('Participant already exists!', 'warning');
+        }
+    }
+
+    function removeParticipant(participant) {
+        participants = participants.filter(p => p !== participant);
+        updateParticipantsList();
+        updateStats();
+    }
+
+    function updateParticipantsList() {
+        const list = document.getElementById('participantsList');
+        list.innerHTML = participants.map(p => `
+                <div class="participant-tag">
+                    <span>${p}</span>
+                    <span class="remove-participant" onclick="removeParticipant('${p}')">×</span>
+                </div>
+            `).join('');
+    }
+
+    function handleKeyPress(event) {
+        if (event.key === 'Enter') {
+            addParticipant();
+        }
+    }
+
+    function startDraw() {
+        if (isDrawing) return;
+
+        if (participants.length === 0) {
+            showToast('Please add participants first!', 'error');
+            return;
+        }
+
+        isDrawing = true;
+        const button = document.getElementById('drawButton');
+        const numberDisplay = document.getElementById('numberDisplay');
+        const winnerNumber = document.getElementById('winnerNumber');
+        const countdown = document.getElementById('countdown');
+
+        button.disabled = true;
+        button.textContent = 'Drawing...';
+        numberDisplay.classList.add('spinning');
+        countdown.style.display = 'flex';
+
+        let countdownValue = 5;
+        countdown.textContent = countdownValue;
+
+        // Start countdown
+        const countdownInterval = setInterval(() => {
+            countdownValue--;
+            countdown.textContent = countdownValue;
+
+            if (countdownValue <= 0) {
+                countdown.style.display = 'none';
+                clearInterval(countdownInterval);
+            }
+        }, 1000);
+
+        // Very slow rolling animation
+        let speed = 500; // Start very slow
+        const totalDuration = 5000; // 5 seconds
+        let elapsed = 0;
+
+        const rollInterval = setInterval(() => {
+            const randomIndex = Math.floor(Math.random() * participants.length);
+            winnerNumber.textContent = participants[randomIndex];
+            winnerNumber.style.opacity = '0.7';
+
+            // Add slight scale animation for each change
+            winnerNumber.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                winnerNumber.style.transform = 'scale(1)';
+            }, 100);
+
+            elapsed += speed;
+
+            // Very gradually increase speed
+            if (elapsed > 2000) {
+                speed = Math.max(400, speed - 50);
+                clearInterval(rollInterval);
+
+                // Continue with slightly faster rolling
+                const mediumRollInterval = setInterval(() => {
+                    const mediumRandomIndex = Math.floor(Math.random() * participants.length);
+                    winnerNumber.textContent = participants[mediumRandomIndex];
+                }, speed);
+
+                setTimeout(() => {
+                    clearInterval(mediumRollInterval);
+
+                    // Final faster rolling phase
+                    const fastRollInterval = setInterval(() => {
+                        const fastRandomIndex = Math.floor(Math.random() * participants.length);
+                        winnerNumber.textContent = participants[fastRandomIndex];
+                        winnerNumber.style.opacity = '0.85';
+                    }, 200);
+
+                    // Stop after 5 seconds total
+                    setTimeout(() => {
+                        clearInterval(fastRollInterval);
+
+                        // Select final winner
+                        const winnerIndex = Math.floor(Math.random() * participants.length);
+                        const winner = participants[winnerIndex];
+
+                        winnerNumber.style.opacity = '1';
+                        winnerNumber.style.transform = 'scale(1)';
+                        winnerNumber.textContent = winner;
+                        winnerNumber.classList.add('celebrating');
+                        numberDisplay.classList.remove('spinning');
+
+                        // Add to winners list
+                        addWinner(winner);
+
+                        // Create confetti effect
+                        createConfetti();
+
+                        // Reset button
+                        setTimeout(() => {
+                            button.disabled = false;
+                            button.textContent = 'Draw Winner';
+                            winnerNumber.classList.remove('celebrating');
+                            isDrawing = false;
+                        }, 2000);
+                    }, totalDuration - 2000 - 2000);
+                }, 2000);
+            }
+        }, speed);
+    }
+
+    function addWinner(winner) {
+        const now = new Date();
+        const timeString = now.toLocaleTimeString();
+
+        // Keep only last 20 winners
+        if (winners.length >= 20) {
+            winners.pop(); // Remove oldest winner if we have 20
+        }
+
+        // Add new winner to the beginning
+        winners.unshift({
+            number: winner,
+            time: timeString,
+            rank: 0 // Will be calculated below
+        });
+
+        // Calculate rank for new winner (first gets 20, second gets 19, etc.)
+        const newRank = Math.max(20 - (totalDraws % 20), 1);
+        winners[0].rank = newRank;
+
+        updateWinnersList();
+        updateStats();
+        totalDraws++;
+        document.getElementById('totalDraws').textContent = totalDraws;
+
+        showToast(`🎉 Winner #${newRank}: ${winner}!`); // Shows the calculated rank
+    }
+
+    function updateWinnersList() {
+        const list = document.getElementById('winnersList');
+
+        if (winners.length === 0) {
+            list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="empty-icon">📋</div>
+                        <p>No winners yet</p>
+                        <p style="font-size: 0.875rem; margin-top: 0.5rem;">Start drawing to see winners here</p>
+                    </div>
+                `;
+            return;
+        }
+
+        list.innerHTML = winners.map((winner, index) => `
+                <div class="winner-item">
+                    <div class="winner-info">
+                        <div class="winner-rank">${winner.rank}</div>
+                        <div class="winner-details">
+                            <div class="winner-number-text">${winner.number}</div>
+                            <div class="winner-time">${winner.time}</div>
+                        </div>
+                    </div>
+                    ${index === 0 ? '<span class="winner-badge">Latest</span>' : ''}
+                </div>
+            `).join('');
+    }
+
+    function clearWinners() {
+        if (winners.length === 0) return;
+
+        if (confirm('Are you sure you want to clear all winners?')) {
+            winners = [];
+            updateWinnersList();
+            updateStats();
+            showToast('Winners list cleared');
+        }
+    }
+
+    function updateStats() {
+        document.getElementById('participantCount').textContent = participants.length;
+        document.getElementById('uniqueWinners').textContent = new Set(winners.map(w => w.number)).size;
+    }
+
+    function createConfetti() {
+        const colors = ['#667eea', '#764ba2', '#f093fb', '#f5576c', '#4facfe', '#00f2fe'];
+
+        for (let i = 0; i < 50; i++) {
+            setTimeout(() => {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti';
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.background = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animationDelay = Math.random() * 0.5 + 's';
+                confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                document.body.appendChild(confetti);
+
+                setTimeout(() => confetti.remove(), 3000);
+            }, i * 30);
+        }
+    }
+
+    function showToast(message, type = 'success') {
+        const toast = document.getElementById('toast');
+        toast.textContent = message;
+        toast.className = 'toast show';
+
+        if (type === 'error') {
+            toast.style.background = 'var(--danger)';
+        } else if (type === 'warning') {
+            toast.style.background = '#ed8936';
+        } else {
+            toast.style.background = 'var(--dark)';
+        }
+
+        setTimeout(() => {
+            toast.classList.remove('show');
+        }, 3000);
+    }
+
+    // Initialize on load
+    window.addEventListener('load', () => {
+        initializeParticipants();
+    });
+</script>
+</body>
+</html>
