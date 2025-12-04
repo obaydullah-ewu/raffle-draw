@@ -182,6 +182,52 @@
             -webkit-text-fill-color: transparent;
             background-clip: text;
             transition: all 0.3s ease;
+            display: flex;
+            gap: 0.2rem;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .digit {
+            display: inline-block;
+            min-width: 1.2ch;
+            text-align: center;
+            opacity: 0;
+            transform: translateY(20px) scale(0.5);
+            transition: all 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+        }
+
+        .digit.revealed {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            animation: digitReveal 0.5s ease;
+        }
+
+        @keyframes digitReveal {
+            0% {
+                transform: translateY(-20px) scale(0.5) rotateX(90deg);
+                opacity: 0;
+            }
+            50% {
+                transform: translateY(0) scale(1.2) rotateX(45deg);
+                opacity: 0.8;
+            }
+            100% {
+                transform: translateY(0) scale(1) rotateX(0deg);
+                opacity: 1;
+            }
+        }
+
+        .digit.rolling {
+            animation: digitRoll 0.1s linear infinite;
+        }
+
+        @keyframes digitRoll {
+            0% { transform: translateY(0); }
+            25% { transform: translateY(-10px); }
+            50% { transform: translateY(0); }
+            75% { transform: translateY(10px); }
+            100% { transform: translateY(0); }
         }
 
         .winner-number.celebrating {
@@ -191,6 +237,43 @@
         @keyframes bounce {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-20px); }
+        }
+
+        .digit-slot {
+            position: relative;
+            display: inline-block;
+            min-width: 1.2ch;
+            text-align: center;
+            height: 6rem;
+            overflow: hidden;
+        }
+
+        .digit-slot-roller {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            animation: slotRoll 0.5s cubic-bezier(0.17, 0.67, 0.16, 0.99);
+        }
+
+        @keyframes slotRoll {
+            0% {
+                transform: translateY(0);
+            }
+            100% {
+                transform: translateY(-100%);
+            }
+        }
+
+        .digit-value {
+            height: 6rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 5rem;
+            font-weight: bold;
         }
 
         .countdown {
@@ -623,7 +706,7 @@
 
     // Initialize with some default participants
     function initializeParticipants() {
-        const defaultParticipants = ['001', '002', '003', '004', '005', '006', '007', '008', '009', '010'];
+        const defaultParticipants = ['111', '123', '225', '356', '489', '555', '789', '456', '369', '357'];
         defaultParticipants.forEach(p => participants.push(p));
         updateParticipantsList();
         updateStats();
@@ -746,29 +829,126 @@
                         const winnerIndex = Math.floor(Math.random() * participants.length);
                         const winner = participants[winnerIndex];
 
-                        winnerNumber.style.opacity = '1';
-                        winnerNumber.style.transform = 'scale(1)';
-                        winnerNumber.textContent = winner;
-                        winnerNumber.classList.add('celebrating');
-                        numberDisplay.classList.remove('spinning');
+                        // Create digit-by-digit reveal animation
+                        revealWinnerDigitByDigit(winner, () => {
+                            winnerNumber.classList.add('celebrating');
+                            numberDisplay.classList.remove('spinning');
 
-                        // Add to winners list
-                        addWinner(winner);
+                            // Add to winners list
+                            addWinner(winner);
 
-                        // Create confetti effect
-                        createConfetti();
+                            // Create confetti effect
+                            createConfetti();
 
-                        // Reset button
-                        setTimeout(() => {
-                            button.disabled = false;
-                            button.textContent = 'Draw Winner';
-                            winnerNumber.classList.remove('celebrating');
-                            isDrawing = false;
-                        }, 2000);
+                            // Reset button
+                            setTimeout(() => {
+                                button.disabled = false;
+                                button.textContent = 'Draw Winner';
+                                winnerNumber.classList.remove('celebrating');
+                                isDrawing = false;
+                            }, 2000);
+                        });
                     }, totalDuration - 2000 - 2000);
                 }, 2000);
             }
         }, speed);
+    }
+
+    function revealWinnerDigitByDigit(winner, callback) {
+        const winnerNumber = document.getElementById('winnerNumber');
+        const digits = winner.toString().split('');
+
+        // Reset styles
+        winnerNumber.style = '';
+        winnerNumber.innerHTML = '';
+        winnerNumber.className = 'winner-number';
+
+        // Create digit boxes container
+        const container = document.createElement('div');
+        container.style.cssText = `
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            justify-content: center;
+        `;
+
+        // Create box for each digit
+        digits.forEach((digit, index) => {
+            const digitBox = document.createElement('div');
+            digitBox.className = 'digit-box';
+            digitBox.style.cssText = `
+                width: 70px;
+                height: 90px;
+                background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+                border-radius: 12px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
+                opacity: 0;
+                transform: scale(0.8) translateY(20px);
+                transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            `;
+
+            const digitText = document.createElement('div');
+            digitText.style.cssText = `
+                font-size: 48px;
+                font-weight: bold;
+                color: white;
+                text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+            `;
+            digitText.textContent = '?';
+
+            digitBox.appendChild(digitText);
+            container.appendChild(digitBox);
+        });
+
+        winnerNumber.appendChild(container);
+
+        // Reveal digits one by one
+        let currentIndex = 0;
+
+        function revealNext() {
+            if (currentIndex < digits.length) {
+                const box = container.children[currentIndex];
+                const text = box.querySelector('div');
+
+                // Show the box
+                box.style.opacity = '1';
+                box.style.transform = 'scale(1) translateY(0)';
+
+                // Quick rolling animation
+                let rollCount = 0;
+                const rollInterval = setInterval(() => {
+                    text.textContent = Math.floor(Math.random() * 10);
+                    rollCount++;
+
+                    if (rollCount > 12) {
+                        clearInterval(rollInterval);
+                        text.textContent = digits[currentIndex];
+
+                        // Add bounce effect
+                        box.style.animation = 'bounce 0.5s ease';
+
+                        currentIndex++;
+
+                        // Continue to next digit
+                        if (currentIndex < digits.length) {
+                            setTimeout(revealNext, 300);
+                        } else {
+                            // All digits revealed
+                            setTimeout(() => {
+                                container.style.animation = 'pulse 0.5s ease';
+                                setTimeout(callback, 300);
+                            }, 400);
+                        }
+                    }
+                }, 80);
+            }
+        }
+
+        // Start revealing after a short delay
+        setTimeout(revealNext, 200);
     }
 
     function addWinner(winner) {
