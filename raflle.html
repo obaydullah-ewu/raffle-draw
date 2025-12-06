@@ -876,34 +876,47 @@
                     digitBox.style.opacity = '1';
                     digitBox.style.transform = 'scale(1) rotate(0deg)';
 
-                    // Start rolling
+                    // Start smooth rolling
                     let rollCount = 0;
                     const rollInterval = setInterval(() => {
-                        digitElement.textContent = Math.floor(Math.random() * 10);
+                        // Show gradually increasing numbers for smooth transition
+                        const currentRoll = Math.floor(Math.random() * 10);
+                        digitElement.textContent = currentRoll;
+
+                        // Add slight size variation for more natural feel
+                        const scale = 1 + (Math.sin(rollCount * 0.5) * 0.05);
+                        digitElement.style.transform = `scale(${scale})`;
+
                         rollCount++;
 
-                        if (rollCount > 15) {
+                        if (rollCount > 20) {
                             clearInterval(rollInterval);
-                            digitElement.textContent = digits[currentDigit];
-                            finalDigits.push(digits[currentDigit]);
 
-                            // Bounce effect
-                            digitBox.style.transform = 'scale(1.1)';
+                            // Smooth transition to final digit
+                            digitElement.style.transform = 'scale(0.8)';
                             setTimeout(() => {
-                                digitBox.style.transform = 'scale(1)';
-                            }, 200);
+                                digitElement.textContent = digits[currentDigit];
+                                digitElement.style.transform = 'scale(1)';
+                                finalDigits.push(digits[currentDigit]);
 
-                            currentDigit++;
-                            if (currentDigit < digits.length) {
-                                setTimeout(showNextDigit, 400);
-                            } else {
-                                // All digits shown
+                                // Gentle bounce effect
+                                digitBox.style.transform = 'scale(1.05)';
                                 setTimeout(() => {
-                                    callback();
-                                }, 500);
-                            }
+                                    digitBox.style.transform = 'scale(1)';
+                                }, 150);
+
+                                currentDigit++;
+                                if (currentDigit < digits.length) {
+                                    setTimeout(showNextDigit, 600);
+                                } else {
+                                    // All digits shown
+                                    setTimeout(() => {
+                                        callback();
+                                    }, 500);
+                                }
+                            }, 200);
                         }
-                    }, 100);
+                    }, 150);
                 }, 200);
 
             }
